@@ -69,3 +69,47 @@ class TaskDetailView(APIView):
         task = self.get_object(task_id)
         serializer = TaskSerializer(task)
         return Response(serializer.data, status = status.HTTP_200_OK)
+
+class UserTaskListView(APIView):
+
+    def get(self,request,user_id):
+        user = User.objects.get(pk = user_id)
+        user_tasks = user.tasks.all()
+        serializer = TaskSerializer(user_tasks, many = True)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    
+    def post(self,request,user_id):
+        user = User.objects.get(pk = user_id) #get the user by the user_id
+        serializer = TaskSerializer(data = request.data, context = {'user':user}) #pass the user to the context
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status = status.HTTP_201_CREATED)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+class UserTaskDetailView(APIView):
+
+    def get_object(self,user_id,task_id):
+        try:
+            user = User.objects.get(pk = user_id)
+            return user.tasks.get(pk = task_id)
+        except Task.DoesNotExist:
+            raise Http404
+
+    def get(self,request,user_id,task_id):
+        user_task = self.get_object(user_id,task_id)
+        serializer = TaskSerializer(user_task)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    
+    def put(self,request,user_id,task_id):
+        user_task = self.get_object(user_id,task_id)
+        user = User.objects.get(pk = user_id)
+        serializer = TaskSerializer(user_task, data = request.data, context = {"user":user})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self,request,user_id,task_id):
+        user_task = self.get_object(user_id,task_id)
+        user_task.delete()
+        return Response({'message':'task deleted successfully'},status = status.HTTP_200_OK)
