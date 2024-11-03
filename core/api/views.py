@@ -1,8 +1,9 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import UserRegistrationSerializer
+from .serializers import UserRegistrationSerializer, UserListSerializer
 
 class UserRegistrationView(APIView):
     
@@ -23,3 +24,10 @@ class UserLoginView(APIView):
         if user:
             return Response({"message":"succesfully login"}, status = status.HTTP_200_OK)
         return Response({"error":"invalid credentials"}, status = status.HTTP_400_BAD_REQUEST)
+
+class UserListView(APIView):
+    
+    def get(self,request):
+        users = User.objects.all()
+        serializer = UserListSerializer(users, many = True)
+        return Response(serializer.data, status = status.HTTP_200_OK)
