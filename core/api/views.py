@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework import status
+from django.http import Http404
 from rest_framework.response import Response
 from .serializers import UserRegistrationSerializer, UserListSerializer
 
@@ -30,4 +31,18 @@ class UserListView(APIView):
     def get(self,request):
         users = User.objects.all()
         serializer = UserListSerializer(users, many = True)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+
+class UserDetailView(APIView):
+
+    #check if the user is exist
+    def get_object(self,user_id):
+        try:
+            return User.objects.get(pk = user_id)
+        except User.DoesNotExist:
+            raise Http404
+
+    def get(self,request,user_id):
+        user = self.get_object(user_id)
+        serializer = UserListSerializer(user)
         return Response(serializer.data, status = status.HTTP_200_OK)
