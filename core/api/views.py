@@ -72,14 +72,20 @@ class TaskDetailView(APIView):
 
 class UserTaskListView(APIView):
 
+    def get_object(self,user_id):
+        try:
+            return User.objects.get(pk = user_id)
+        except User.DoesNotExist:
+            raise Http404
+
     def get(self,request,user_id):
-        user = User.objects.get(pk = user_id)
+        user = self.get_object(user_id)
         user_tasks = user.tasks.all()
         serializer = TaskSerializer(user_tasks, many = True)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     def post(self,request,user_id):
-        user = User.objects.get(pk = user_id) #get the user by the user_id
+        user = self.get_object(user_id) #get the user by the user_id
         serializer = TaskSerializer(data = request.data, context = {'user':user}) #pass the user to the context
         if serializer.is_valid():
             serializer.save()
