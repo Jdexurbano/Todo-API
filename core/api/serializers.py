@@ -26,6 +26,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class UserLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username','password']
+
+
 #serializer for user
 class UserListSerializer(serializers.ModelSerializer):
 
@@ -39,7 +45,7 @@ class UserListSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = '__all__'
+        fields = ['id','user','title','content','is_done','created_at','updated_at']
     
     def create(self, validated_data):
         user = self.context['user'] #get the user that pass through the context

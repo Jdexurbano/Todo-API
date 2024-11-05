@@ -5,10 +5,13 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.http import Http404
 from rest_framework.response import Response
-from .serializers import UserRegistrationSerializer, UserListSerializer, TaskSerializer
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from .serializers import UserRegistrationSerializer, UserListSerializer, TaskSerializer, UserLoginSerializer
 
 class UserRegistrationView(APIView):
-    
+
+    @swagger_auto_schema(request_body = UserRegistrationSerializer)
     def post(self,request):
         serializer = UserRegistrationSerializer(data = request.data)
         if serializer.is_valid():
@@ -18,6 +21,7 @@ class UserRegistrationView(APIView):
 
 class UserLoginView(APIView):
 
+    @swagger_auto_schema(request_body = UserLoginSerializer)
     def post(self,request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -51,6 +55,7 @@ class UserDetailView(APIView):
 
 class TaskListView(APIView):
 
+    @swagger_auto_schema(responses = {200:TaskSerializer()})
     def get(self,request):
         tasks = Task.objects.all()
         serializer = TaskSerializer(tasks, many = True)
@@ -64,7 +69,7 @@ class TaskDetailView(APIView):
             return Task.objects.get(pk = task_id)
         except Task.DoesNotExist:
             raise Http404
-    
+    @swagger_auto_schema(responses = {200:TaskSerializer()})
     def get(self,request,task_id):
         task = self.get_object(task_id)
         serializer = TaskSerializer(task)
@@ -72,18 +77,26 @@ class TaskDetailView(APIView):
 
 class UserTaskListView(APIView):
 
+    user_id_param = openapi.Parameter(
+        'user_id',
+        openapi.IN_PATH,
+        description = 'user id',
+        type = openapi.TYPE_INTEGER
+    )
+
     def get_object(self,user_id):
         try:
             return User.objects.get(pk = user_id)
         except User.DoesNotExist:
             raise Http404
-
+    @swagger_auto_schema(responses = {200:TaskSerializer()}, manual_parameters = [user_id_param])
     def get(self,request,user_id):
         user = self.get_object(user_id)
         user_tasks = user.tasks.all()
         serializer = TaskSerializer(user_tasks, many = True)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
+    @swagger_auto_schema(request_body = TaskSerializer,manual_parameters = [user_id_param])
     def post(self,request,user_id):
         user = self.get_object(user_id) #get the user by the user_id
         serializer = TaskSerializer(data = request.data, context = {'user':user}) #pass the user to the context
@@ -94,18 +107,34 @@ class UserTaskListView(APIView):
 
 class UserTaskDetailView(APIView):
 
+    user_id_param = openapi.Parameter(
+        'user_id',
+        openapi.IN_PATH,
+        description = 'user id',
+        type = openapi.TYPE_INTEGER
+    )
+
+    task_id_param = openapi.Parameter(
+        'task_id',
+        openapi.IN_PATH,
+        description = 'task id',
+        type = openapi.TYPE_INTEGER
+    )
+
     def get_object(self,user_id,task_id):
         try:
             user = User.objects.get(pk = user_id)
             return user.tasks.get(pk = task_id)
         except Task.DoesNotExist:
             raise Http404
-
+    
+    @swagger_auto_schema(responses = {200: TaskSerializer()}, manual_parameters = [user_id_param,task_id_param])
     def get(self,request,user_id,task_id):
         user_task = self.get_object(user_id,task_id)
         serializer = TaskSerializer(user_task)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
+    @swagger_auto_schema(request_body = TaskSerializer,responses = {200: TaskSerializer()}, manual_parameters = [user_id_param,task_id_param])
     def put(self,request,user_id,task_id):
         user_task = self.get_object(user_id,task_id)
         user = User.objects.get(pk = user_id)
